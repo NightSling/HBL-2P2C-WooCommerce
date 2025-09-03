@@ -1,6 +1,6 @@
 <?php
 
-namespace Nexhbp\HimalayanBank;
+namespace HBL\HimalayanBank;
 
 class SecurityData {
 
@@ -89,7 +89,7 @@ class SecurityData {
 	 * @return array The array of settings for the Himalayan Bank Payment Gateway.
 	 */
 	public static function options(): array {
-		return get_option( 'woocommerce_nexhbp_himalayan_bank_payment_gateway_settings' );
+		return get_option( 'woocommerce_hbl_himalayan_bank_payment_gateway_settings' );
 	}
 
 	/**

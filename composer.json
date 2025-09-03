@@ -1,15 +1,15 @@
 {
-    "name": "sachittandukar/himalayan-bank-payment-gateway",
+    "name": "NightSling/himalayan-bank-payment-gateway",
     "type": "project",
     "autoload": {
         "psr-4": {
-            "Nexhbp\\HimalayanBank\\": "src/"
+            "HBL\\HimalayanBank\\": "src/"
         }
     },
     "authors": [
         {
-            "name": "Sachit Tandukar",
-            "email": "contact@sachittandukar.com"
+            "name": "NightSling",
+            "email": "day@daysling.com"
         }
     ],
     "require": {

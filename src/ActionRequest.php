@@ -1,6 +1,6 @@
 <?php
 
-namespace Nexhbp\HimalayanBank;
+namespace HBL\HimalayanBank;
 
 use Exception;
 use GuzzleHttp\Client;
@@ -164,7 +164,7 @@ abstract class ActionRequest {
 	}
 
 	private static function options(): array {
-		return get_option( 'woocommerce_nexhbp_himalayan_bank_payment_gateway_settings' );
+		return get_option( 'woocommerce_hbl_himalayan_bank_payment_gateway_settings' );
 	}
 
 	private static function is_test(): string {

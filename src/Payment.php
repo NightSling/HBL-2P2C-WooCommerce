@@ -1,6 +1,6 @@
 <?php
 
-namespace Nexhbp\HimalayanBank;
+namespace HBL\HimalayanBank;
 
 use Carbon\Carbon;
 use GuzzleHttp\Exception\GuzzleException;
@@ -129,7 +129,7 @@ class Payment extends ActionRequest {
 		$signingKey    = $this->GetPrivateKey( SecurityData::get_merchant_signing_private_key() );
 		$encryptingKey = $this->GetPublicKey( SecurityData::get_paco_encryption_public_key() );
 		$logger        = wc_get_logger();
-		$context       = array( 'source' => 'nexhbp-himalayan-bank-payment-gateway' );
+		$context       = array( 'source' => 'hbl-himalayan-bank-payment-gateway' );
 		$logger?->info( 'Payload: ' . $stringPayload, $context );
 
 		$body = $this->EncryptPayload( $stringPayload, $signingKey, $encryptingKey );
