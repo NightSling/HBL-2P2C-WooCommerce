@@ -12,7 +12,8 @@ use GuzzleHttp\Exception\GuzzleException;
  * including standard payments and payments with JOSE (JSON Object Signing and Encryption) standards.
  * It utilizes the Guzzle HTTP client for communication with the payment API.
  */
-class Payment extends ActionRequest {
+class Payment extends ActionRequest
+{
 
 	/**
 	 * Executes a JOSE payment transaction with form data.
@@ -48,8 +49,8 @@ class Payment extends ActionRequest {
 	): string {
 		$now = Carbon::now();
 
-		$productDescription = apply_filters( 'nexhbp_himalayan_bank_product_description', "desc for '$orderNo'", $orderNo );
-		if ( empty( $product_detail ) ) {
+		$productDescription = apply_filters('hbl_himalayan_bank_product_description', "desc for '$orderNo'", $orderNo);
+		if (empty($product_detail)) {
 			$product_detail = [
 				[
 					"purchaseItemType"        => "ticket",
@@ -69,7 +70,7 @@ class Payment extends ActionRequest {
 		$request = [
 			"apiRequest"                => [
 				"requestMessageID" => $this->Guid(),
-				"requestDateTime"  => $now->utc()->format( 'Y-m-d\TH:i:s.v\Z' ),
+				"requestDateTime"  => $now->utc()->format('Y-m-d\TH:i:s.v\Z'),
 				"language"         => "en-US",
 			],
 			"officeId"                  => SecurityData::get_merchant_id(),
@@ -89,7 +90,7 @@ class Payment extends ActionRequest {
 			"mcpFlag"                   => "N",
 			"request3dsFlag"            => $threeD,
 			"transactionAmount"         => [
-				"amountText"    => str_pad( ( $amt == null ? 0 : $amt ) * 100, 12, "0", STR_PAD_LEFT ),
+				"amountText"    => str_pad(($amt == null ? 0 : $amt) * 100, 12, "0", STR_PAD_LEFT),
 				"currencyCode"  => $curr,
 				"decimalPlaces" => 2,
 				"amount"        => $amt,
@@ -125,29 +126,29 @@ class Payment extends ActionRequest {
 			"exp"           => $now->addHour()->unix(),
 		];
 
-		$stringPayload = wp_json_encode( $payload );
-		$signingKey    = $this->GetPrivateKey( SecurityData::get_merchant_signing_private_key() );
-		$encryptingKey = $this->GetPublicKey( SecurityData::get_paco_encryption_public_key() );
+		$stringPayload = wp_json_encode($payload);
+		$signingKey    = $this->GetPrivateKey(SecurityData::get_merchant_signing_private_key());
+		$encryptingKey = $this->GetPublicKey(SecurityData::get_paco_encryption_public_key());
 		$logger        = wc_get_logger();
-		$context       = array( 'source' => 'hbl-himalayan-bank-payment-gateway' );
-		$logger?->info( 'Payload: ' . $stringPayload, $context );
+		$context       = array('source' => 'hbl-himalayan-bank-payment-gateway');
+		$logger?->info('Payload: ' . $stringPayload, $context);
 
-		$body = $this->EncryptPayload( $stringPayload, $signingKey, $encryptingKey );
+		$body = $this->EncryptPayload($stringPayload, $signingKey, $encryptingKey);
 
 		//third-party http client https://github.com/guzzle/guzzle
-		$response = $this->client->post( 'api/1.0/Payment/prePaymentUi', [
+		$response = $this->client->post('api/1.0/Payment/prePaymentUi', [
 			'headers' => [
 				'Accept'        => 'application/jose',
 				'CompanyApiKey' => SecurityData::get_access_token(),
 				'Content-Type'  => 'application/jose; charset=utf-8',
 			],
 			'body'    => $body,
-		] );
+		]);
 
 		$token                    = $response->getBody()->getContents();
-		$decryptingKey            = $this->GetPrivateKey( SecurityData::get_merchant_decryption_private_key() );
-		$signatureVerificationKey = $this->GetPublicKey( SecurityData::get_paco_signing_public_key() );
+		$decryptingKey            = $this->GetPrivateKey(SecurityData::get_merchant_decryption_private_key());
+		$signatureVerificationKey = $this->GetPublicKey(SecurityData::get_paco_signing_public_key());
 
-		return $this->DecryptToken( $token, $decryptingKey, $signatureVerificationKey );
+		return $this->DecryptToken($token, $decryptingKey, $signatureVerificationKey);
 	}
 }

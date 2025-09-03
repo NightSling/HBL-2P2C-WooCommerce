@@ -1,6 +1,7 @@
 {
-    "name": "NightSling/himalayan-bank-payment-gateway",
-    "type": "project",
+    "name": "hbl/himalayan-bank-payment-gateway",
+    "description": "Himalayan Bank Payment Gateway integration for WooCommerce",
+    "type": "wordpress-plugin",
     "autoload": {
         "psr-4": {
             "HBL\\HimalayanBank\\": "src/"
