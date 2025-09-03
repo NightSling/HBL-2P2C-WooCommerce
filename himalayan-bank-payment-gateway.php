@@ -393,7 +393,7 @@ function hbl_himalayan_bank_payment_gateway_init(): void
 		 */
 		public function process_payment($order_id): array
 		{
-			$order    = wc_get_order($order_id);
+			$order = wc_get_order($order_id);
 
 			$existing_url    = $order->get_meta('hbl_payment_url');
 			$expiry_datetime = $order->get_meta('hbl_payment_expiry');
@@ -415,15 +415,27 @@ function hbl_himalayan_bank_payment_gateway_init(): void
 				}
 			}
 
+			// Generate secure salt for payment verification
+			$secure_salt = wp_generate_password(32, false);
+			$order->update_meta_data('hbl_payment_secure_salt', $secure_salt);
+			$order->save();
+
 			$currency = wc_clean($this->get_option('currency'));
 			$amount   = $order->get_total();
 			if ($this->get_option('card_fee_enabled') === 'yes' && $this->get_option('card_fee_percentage') > 0) {
 				$amount += ($amount * $this->get_option('card_fee_percentage')) / 100;
 				$amount = round($amount, 2);
 			}
-			$threeD          = wc_clean($this->get_option('3d_secure')) === 'yes' ? 'Y' : 'N'; // Adjust this according to your settings
+			$threeD          = wc_clean($this->get_option('3d_secure')) === 'yes' ? 'Y' : 'N';
 			$success_page_id = $this->get_option('success_page');
-			$success_url     = $success_page_id ? esc_url(get_permalink($success_page_id)) : $order->get_checkout_order_received_url();
+			$success_url     = $success_page_id ?
+				add_query_arg(array(
+					'order_id' => $order_id,
+					'salt' => $secure_salt
+				), esc_url(get_permalink($success_page_id))) :
+				add_query_arg(array(
+					'salt' => $secure_salt
+				), $order->get_checkout_order_received_url());
 
 			$redirect_url = wp_nonce_url(esc_url(wc_get_checkout_url()), 'payment_action', 'payment_nonce');
 
@@ -486,6 +498,33 @@ function hbl_himalayan_bank_payment_gateway_init(): void
 					'redirect' => $redirect_url,
 				);
 			}
+		}
+
+		/**
+		 * Verify secure salt for payment confirmation
+		 *
+		 * @param int $order_id The order ID
+		 * @param string $provided_salt The salt provided in the URL
+		 * @return bool True if salt is valid
+		 */
+		private function verify_payment_salt($order_id, $provided_salt): bool
+		{
+			if (empty($provided_salt) || empty($order_id)) {
+				return false;
+			}
+
+			$order = wc_get_order($order_id);
+			if (!$order) {
+				return false;
+			}
+
+			$stored_salt = $order->get_meta('hbl_payment_secure_salt');
+			if (empty($stored_salt)) {
+				return false;
+			}
+
+			// Use hash_equals for constant-time comparison to prevent timing attacks
+			return hash_equals($stored_salt, $provided_salt);
 		}
 
 		/**
@@ -780,6 +819,33 @@ function hbl_himalayan_bank_payment_gateway_init(): void
 	add_filter('woocommerce_payment_gateways', 'hbl_add_himalaya_bank_payment_gateway');
 }
 
+/**
+ * Helper function to verify secure salt for payment confirmation
+ *
+ * @param int $order_id The order ID
+ * @param string $provided_salt The salt provided in the URL
+ * @return bool True if salt is valid
+ */
+function hbl_verify_payment_salt($order_id, $provided_salt): bool
+{
+	if (empty($provided_salt) || empty($order_id)) {
+		return false;
+	}
+
+	$order = wc_get_order($order_id);
+	if (!$order) {
+		return false;
+	}
+
+	$stored_salt = $order->get_meta('hbl_payment_secure_salt');
+	if (empty($stored_salt)) {
+		return false;
+	}
+
+	// Use hash_equals for constant-time comparison to prevent timing attacks
+	return hash_equals($stored_salt, $provided_salt);
+}
+
 add_action('template_redirect', 'hbl_himalayan_bank_payment_gateway_handle_payment_redirect');
 /**
  * @throws WC_Data_Exception
@@ -795,6 +861,11 @@ function hbl_himalayan_bank_payment_gateway_handle_payment_redirect(): void
 	$action = isset($_GET['action']) ? sanitize_text_field(wc_clean(wp_unslash($_GET['action']))) : '';
 	// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 	$payment_nonce = isset($_GET['payment_nonce']) ? sanitize_text_field(wc_clean(wp_unslash($_GET['payment_nonce']))) : null;
+	// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+	$provided_salt = isset($_GET['salt']) ? sanitize_text_field(wc_clean(wp_unslash($_GET['salt']))) : null;
+
+	$logger = wc_get_logger();
+	$context = array('source' => 'hbl-himalayan-bank-payment-gateway');
 
 	if ($action && $order_id && $payment_nonce && is_checkout() && ! wp_verify_nonce($payment_nonce, 'payment_action')) {
 		wc_add_notice(esc_html__('Security check failed, please try again.', 'hbl-himalayan-bank-payment-gateway'), 'error');
@@ -802,20 +873,46 @@ function hbl_himalayan_bank_payment_gateway_handle_payment_redirect(): void
 		exit;
 	}
 
-	/* if ($order_id && $transaction_id && is_order_received_page()) {
+	// Handle successful payment confirmation with salt verification
+	if ($order_id && $transaction_id && is_order_received_page()) {
 		$order = wc_get_order($order_id);
-		$order->update_status('processing');
-		$order->set_transaction_id($transaction_id);
-		$order->save();
+
+		if ($order && $provided_salt) {
+			// Verify the secure salt
+			if (hbl_verify_payment_salt($order_id, $provided_salt)) {
+				$order->update_status('processing', 'Payment confirmed with valid security token');
+				$order->set_transaction_id($transaction_id);
+				$order->add_order_note('Payment verification successful via secure salt validation');
+				$order->save();
+				$logger->info("Payment confirmed for order {$order_id} with valid salt", $context);
+			} else {
+				$logger->error("Invalid salt provided for order {$order_id}. Potential security breach.", $context);
+				wc_add_notice(esc_html__('Payment verification failed. Please contact support.', 'hbl-himalayan-bank-payment-gateway'), 'error');
+			}
+		}
 	}
 
+	// Handle custom success page with salt verification
 	$success_page_id = get_option('woocommerce_hbl_himalayan_bank_payment_gateway_settings')['success_page'];
-	if ($order_id && $success_page_id !== '' && $post->ID === (int) $success_page_id) {
+	if ($order_id && $success_page_id !== '' && $post && $post->ID === (int) $success_page_id) {
 		$order = wc_get_order($order_id);
-		$order->update_status('processing');
-		$order->set_transaction_id($transaction_id);
-		$order->save();
-	} */
+
+		if ($order && $provided_salt) {
+			// Verify the secure salt
+			if (hbl_verify_payment_salt($order_id, $provided_salt)) {
+				$order->update_status('processing', 'Payment confirmed via custom success page with valid security token');
+				if ($transaction_id) {
+					$order->set_transaction_id($transaction_id);
+				}
+				$order->add_order_note('Payment verification successful via custom success page');
+				$order->save();
+				$logger->info("Payment confirmed for order {$order_id} via custom success page with valid salt", $context);
+			} else {
+				$logger->error("Invalid salt provided for order {$order_id} on custom success page. Potential security breach.", $context);
+				wc_add_notice(esc_html__('Payment verification failed. Please contact support.', 'hbl-himalayan-bank-payment-gateway'), 'error');
+			}
+		}
+	}
 
 	if (! empty($action) && is_checkout()) {
 
