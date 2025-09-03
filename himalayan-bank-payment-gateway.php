@@ -443,7 +443,7 @@ function hbl_himalayan_bank_payment_gateway_init(): void
 				), esc_url(get_permalink($cancel_page_id))) :
 				add_query_arg('action', 'cancel', $redirect_url);
 
-			$backend_url = add_query_arg('wc-api', 'hbl_himalayan_bank_payment_gateway', home_url('/'));
+			$backend_url = home_url('/wc-api/hbl_himalayan_bank_payment_gateway');
 			$product_list = $this->create_order_items_array_for_payment($order_id);
 			$fail_message = $this->get_option('failure_message');
 
@@ -802,7 +802,7 @@ function hbl_himalayan_bank_payment_gateway_handle_payment_redirect(): void
 		exit;
 	}
 
-	if ($order_id && $transaction_id && is_order_received_page()) {
+	/* if ($order_id && $transaction_id && is_order_received_page()) {
 		$order = wc_get_order($order_id);
 		$order->update_status('processing');
 		$order->set_transaction_id($transaction_id);
@@ -815,7 +815,7 @@ function hbl_himalayan_bank_payment_gateway_handle_payment_redirect(): void
 		$order->update_status('processing');
 		$order->set_transaction_id($transaction_id);
 		$order->save();
-	}
+	} */
 
 	if (! empty($action) && is_checkout()) {
 
