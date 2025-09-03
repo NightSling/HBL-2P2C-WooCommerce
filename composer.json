@@ -1,0 +1,24 @@
+{
+    "name": "sachittandukar/himalayan-bank-payment-gateway",
+    "type": "project",
+    "autoload": {
+        "psr-4": {
+            "Nexhbp\\HimalayanBank\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Sachit Tandukar",
+            "email": "contact@sachittandukar.com"
+        }
+    ],
+    "require": {
+        "web-token/jwt-framework": "^2.2.11",
+        "guzzlehttp/guzzle": "^7.9",
+        "nesbot/carbon": "^2.72.5",
+        "ext-openssl": "*"
+    },
+    "config": {
+        "platform-check": false
+    }
+}
