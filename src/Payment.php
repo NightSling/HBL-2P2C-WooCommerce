@@ -66,7 +66,7 @@ class Payment extends ActionRequest
 					"passengerSeqNo"          => 1
 				]
 			];
-		}
+		} 
 		$request = [
 			"apiRequest"                => [
 				"requestMessageID" => $this->Guid(),
@@ -74,20 +74,32 @@ class Payment extends ActionRequest
 				"language"         => "en-US",
 			],
 			"officeId"                  => SecurityData::get_merchant_id(),
-			"orderNo"                   => $orderNo,
+			"orderNo"                   => "$orderNo",
 			"productDescription"        => $productDescription,
-			"paymentType"               => "CC",
+			/* "paymentType"               => "CC", */
 			"paymentCategory"           => "ECOM",
-			"storeCardDetails"          => [
-				"storeCardFlag"      => "N",
-				"storedCardUniqueID" => "{{guid}}",
+			"preferredPaymentTypes" => [
+				"CC",
+				"CC-VI",
+				"CC-CA",
+				"CC-AX",
+				"CC-UP",
+				"CC-JC",
+				"QR",
+				"WALLET",
+				"IMBANK"
 			],
-			"installmentPaymentDetails" => [
-				"ippFlag"           => "N",
-				"installmentPeriod" => 0,
-				"interestType"      => null,
-			],
-			"mcpFlag"                   => "N",
+			"autoRedirectDelayTimer" => 3,
+			/* "storeCardDetails"          => [ */
+			/* 	"storeCardFlag"      => "N", */
+			/* 	"storedCardUniqueID" => "{{guid}}", */
+			/* ], */
+			/* "installmentPaymentDetails" => [ */
+			/* 	"ippFlag"           => "N", */
+			/* 	"installmentPeriod" => 0, */
+			/* 	"interestType"      => null, */
+			/* ], */
+			/* "mcpFlag"                   => "N", */
 			"request3dsFlag"            => $threeD,
 			"transactionAmount"         => [
 				"amountText"    => str_pad(($amt == null ? 0 : $amt) * 100, 12, "0", STR_PAD_LEFT),
@@ -101,13 +113,13 @@ class Payment extends ActionRequest
 				"cancellationURL" => $cancel_url,
 				"backendURL"      => $backend_url,
 			],
-			"deviceDetails"             => [
-				"browserIp"        => "1.0.0.1",
-				"browser"          => "Postman Browser",
-				"browserUserAgent" => "PostmanRuntime/7.26.8 - not from header",
-				"mobileDeviceFlag" => "N",
-			],
-			"purchaseItems"             => $product_detail,
+			/* "deviceDetails"             => [ */
+			/* 	"browserIp"        => "1.0.0.1", */
+			/* 	"browser"          => "Postman Browser", */
+			/* 	"browserUserAgent" => "PostmanRuntime/7.26.8 - not from header", */
+			/* 	"mobileDeviceFlag" => "N", */
+			/* ], */
+			"purchaseItemize"             => $product_detail,
 			"customFieldList"           => [
 				[
 					"fieldName"  => "TestField",
