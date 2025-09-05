@@ -550,7 +550,7 @@ function hbl_himalayan_bank_payment_gateway_init(): void
 				$amount_text = str_pad((string) ($amount * 100), 12, "0", STR_PAD_LEFT); // Convert to the required format
 
 				$order_items_array[] = [
-					"purchaseItemType"        => "product",
+					"purchaseItemType"        => "ticket",
 					"referenceNo"             => $product->get_id(),
 					"purchaseItemDescription" => $product->get_name(),
 					"purchaseItemPrice"       => [
