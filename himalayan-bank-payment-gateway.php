@@ -426,7 +426,7 @@ function hbl_himalayan_bank_payment_gateway_init(): void
 				$amount += ($amount * $this->get_option('card_fee_percentage')) / 100;
 				$amount = round($amount, 2);
 			}
-			$threeD          = wc_clean($this->get_option('3d_secure')) === 'yes' ? 'Y' : 'N';
+			$threeD          = wc_clean($this->get_option('3d_secure')) === 'yes' ? 'Y-Strict' : 'N';
 			$success_page_id = $this->get_option('success_page');
 			$success_url     = $success_page_id ?
 				add_query_arg(array(
